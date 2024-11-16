@@ -1,25 +1,73 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traitement de fichier CSV</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traitement de fichier TSV - Sondage</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
     <div class="container mt-5">
-        <h1 class="text-center mb-4">Traitement de fichier CSV</h1>
-        <div class="card shadow-sm p-4">
-            <div class="mb-3">
-                <label for="csvFile" class="form-label">Téléchargez un fichier CSV :</label>
-                <input type="file" id="csvFile" class="form-control" accept=".csv" />
-            </div>
-            <div class="d-flex justify-content-between mt-4">
-                <button id="processCsv" class="btn btn-primary">Traiter le fichier</button>
-                <a id="downloadLink" class="btn btn-success" style="display: none;">Télécharger le CSV modifié</a>
-            </div>
+      <h1 class="text-center mb-4">Traitement des résultats du sondage</h1>
+      <p class="text-center mb-4">
+        Téléchargez un fichier TSV contenant les résultats du sondage et obtenez
+        des assignations basées sur les voeux.
+      </p>
+
+      <div class="card shadow-sm p-4">
+        <!-- Formulaire de téléchargement de fichier TSV -->
+        <div class="mb-3">
+          <label for="tsvFile" class="form-label">
+            1. Téléchargez votre fichier TSV contenant les résultats du sondage
+            :
+          </label>
+          <input type="file" id="tsvFile" class="form-control" accept=".tsv" />
         </div>
+
+        <!-- Bouton pour traiter le fichier TSV -->
+        <div class="d-flex justify-content-between mt-4">
+          <button id="processCsv" class="btn btn-primary" onclick="processFile()">
+            2. Traiter le fichier
+          </button>
+        </div>
+
+        <!-- Espace entre les boutons de téléchargement -->
+        <div class="mt-4">
+          <a
+            id="downloadLink"
+            class="btn btn-success mb-2"
+            style="display: none"
+          >
+            3. Télécharger les assignations
+          </a>
+          <a
+            id="downloadLinkWaitingList"
+            class="btn btn-success mb-2"
+            style="display: none"
+          >
+            4. Télécharger la liste d'attente
+          </a>
+          <a
+            id="downloadLinkEventRecap"
+            class="btn btn-success"
+            style="display: none"
+          >
+            5. Télécharger le récapitulatif des événements
+          </a>
+        </div>
+      </div>
     </div>
+
+    <!-- Importation des scripts nécessaires -->
     <script src="script.js"></script>
-</body>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"
+      integrity="sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </body>
 </html>
