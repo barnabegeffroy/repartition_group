@@ -47,21 +47,20 @@ function findEvents(rows) {
   // Créer les objets d'événements pour premium
   premiumBrut.forEach((eventBrut, _) => {
     const [index, name, capacity] = eventBrut.split("-");
-    console.log(name)
+
     const eventObject = {
-      index: parseInt(index),
+      index: parseInt(index) - 1,
       name,
       capacity: capacity,
     };
     premiumEvents.push(eventObject);
   });
-  console.log(premiumEvents)
 
   // Créer les objets d'événements pour autres
   autresBrut.forEach((eventBrut, _) => {
     const [index, name, capacity] = eventBrut.split("-");
     const eventObject = {
-      index: parseInt(index),
+      index: parseInt(index) - 1,
       name,
       capacity: parseInt(capacity),
     };
@@ -103,7 +102,6 @@ function findEvents(rows) {
       autresEventsOrdonnes[webformSerial] = voeuxAutres;
     }
   }
-  console.log(premiumEventsOrdonnes[4])
 
   // Récupérer les infos de chaque utilisateur
   var personnes = {};
@@ -160,7 +158,7 @@ function findEvents(rows) {
         // Vérifier la capacité de l'événement
         let eventCapacity = premiumEvents[event.index].capacity;
         let minimumCapacity = personnes[participantId].binome == 1 ? 1 : 0;
-        console.log(event)
+
         if (eventCapacity > minimumCapacity) {
           // Si le participant n'a pas encore de sortie, l'assigner à cet événement
           if (assignmentsPremium[participantId].length < NBR_SORTIES) {
