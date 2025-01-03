@@ -1,6 +1,3 @@
-const NBR_VOEUX = 4;
-const NBR_SORTIES = 3;
-
 function processFile() {
   const fileInput = document.getElementById("tsvFile");
   if (fileInput.files.length === 0) {
@@ -36,36 +33,17 @@ function processFile() {
 function findEvents(rows) {
   const premiumStartIndex = rows[1].indexOf("premium");
   const autresStartIndex = rows[1].indexOf("autres");
+  const nbrvoeuxIndex = rows[2].indexOf("nbr_voeux");
+  const NBR_VOEUX = rows[3][nbrvoeuxIndex];
+  const nbrEventsIndex = rows[2].indexOf("nbr_events");
+  const NBR_SORTIES = rows[3][nbrEventsIndex];
   const headers = rows[2];
   const nameIndex = headers.indexOf("nom");
   const premiumBrut = headers.slice(premiumStartIndex, autresStartIndex);
   const autresBrut = headers.slice(autresStartIndex);
 
-  var premiumEvents = [];
-  const autresEvents = [];
-
-  // Créer les objets d'événements pour premium
-  premiumBrut.forEach((eventBrut, _) => {
-    const [index, name, capacity] = eventBrut.split("-");
-
-    const eventObject = {
-      index: parseInt(index) - 1,
-      name,
-      capacity: capacity,
-    };
-    premiumEvents.push(eventObject);
-  });
-
-  // Créer les objets d'événements pour autres
-  autresBrut.forEach((eventBrut, _) => {
-    const [index, name, capacity] = eventBrut.split("-");
-    const eventObject = {
-      index: parseInt(index) - 1,
-      name,
-      capacity: parseInt(capacity),
-    };
-    autresEvents.push(eventObject);
-  });
+  const premiumEvents = processEventList(premiumBrut);
+  const autresEvents = processEventList(autresBrut);
 
   // Variables pour stocker les classements
   const premiumEventsOrdonnes = {};
@@ -97,35 +75,15 @@ function findEvents(rows) {
         }
       }
 
-      // Remplacer l'utilisation de la Map par un objet JSON
       premiumEventsOrdonnes[webformSerial] = voeuxPremium;
       autresEventsOrdonnes[webformSerial] = voeuxAutres;
     }
   }
 
   // Récupérer les infos de chaque utilisateur
-  var personnes = {};
-  for (let i = 3; i < rows.length; i++) {
-    const row = rows[i];
-    if (row.length > 0) {
-      const webformSerial = row[0];
-      const [nom, prenom, coordonnees, binome, coordonnees_binome] = row.slice(
-        nameIndex,
-        premiumStartIndex
-      );
+  const personnes = processUserDetails(rows, nameIndex, premiumStartIndex);
 
-      personnes[webformSerial] = {
-        nom: nom,
-        prenom: prenom,
-        coordonnees: coordonnees,
-        binome: binome,
-        coordonnees_binome: coordonnees_binome,
-      };
-    }
-  }
-
-  // Assignation
-
+  // Assignation premium
   let scorePremium = {};
   let assignmentsPremium = {};
   let waitingListPremium = {};
@@ -278,11 +236,11 @@ function findEvents(rows) {
     data.push(row);
   });
 
-  generateExcelFile(data, "fichier5.xlsx", "downloadLink");
+  generateExcelFile(data, "repartitions_par_personnes.xlsx", "downloadLink");
 
   generateRecapInscriptionExcel(
     { ...participantsByEventPremium, ...participantsByEventAutres },
-    "recap_inscriptions.xlsx",
+    "recap_inscriptions_par_evenements.xlsx",
     "downloadLinkEventRecap"
   );
 
@@ -320,17 +278,56 @@ function findEvents(rows) {
     // Générer le fichier Excel
     generateExcelFile(data, fileName, id);
   }
+}
 
-  // Fonction utilitaire pour formater les informations des participants
-  function formatParticipantInfo(person) {
-    const lineBreak = `
-`;
-    const binomeInfo =
-      person.binome == 1
-        ? ` \nBinôme : ${person.binome} \nCoordonnées Binôme : ${person.coordonnees_binome}`
-        : "";
-    return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees}${binomeInfo}`;
+function processEventList(eventsBrut) {
+  return eventsBrut.map((eventBrut) => {
+    const [index, name, capacity] = eventBrut.split("-");
+    return {
+      index: parseInt(index) - 1,
+      name,
+      capacity: parseInt(capacity),
+    };
+  });
+}
+
+function processUserPreferences(preferences, events) {
+  return preferences.map((pref) => {
+    if (pref === "") return { name: "-1-" };
+    const eventIndex = parseInt(pref, 10);
+    return events[eventIndex] || {};
+  });
+}
+
+function processUserDetails(rows, nameIndex, premiumStartIndex) {
+  const personnes = {};
+  for (let i = 3; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.length > 0) {
+      const webformSerial = row[0];
+      const [nom, prenom, coordonnees, binome, coordonnees_binome] = row.slice(
+        nameIndex,
+        premiumStartIndex
+      );
+      personnes[webformSerial] = {
+        nom,
+        prenom,
+        coordonnees,
+        binome,
+        coordonnees_binome,
+      };
+    }
   }
+  return personnes;
+}
+
+// Fonction utilitaire pour formater les informations des participants
+function formatParticipantInfo(person) {
+  const binomeInfo =
+    person.binome == 1
+      ? ` \nBinôme : ${person.binome} \nCoordonnées Binôme : ${person.coordonnees_binome}`
+      : "";
+  return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees}${binomeInfo}`;
 }
 
 function generateExcelFile(data, fileName, downloadLinkId) {
