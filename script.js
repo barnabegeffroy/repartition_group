@@ -1,33 +1,46 @@
 function processFile() {
-  const fileInput = document.getElementById("tsvFile");
-  if (fileInput.files.length === 0) {
-    alert("Veuillez sélectionner un fichier TSV.");
-    return;
+  try {
+    const fileInput = document.getElementById("tsvFile");
+    if (fileInput.files.length === 0) {
+      alert("Veuillez sélectionner un fichier TSV.");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+      const tsvContent = event.target.result;
+
+      // Traitement du contenu TSV :
+      // 1. Séparer par ligne.
+      // 2. Séparer chaque ligne par la tabulation.
+      // 3. Enlever les guillemets autour des cellules.
+      const rows = tsvContent
+        .split("\n") // Sépare le fichier par ligne
+        .map(
+          (row) =>
+            row
+              .split("\t") // Sépare la ligne par tabulation
+              .map((cell) => cell.replace(/(^"|"$)/g, "").trim()) // Retire les guillemets autour des cellules et enlève les espaces inutiles
+        );
+      try {
+        findEvents(rows); // Traitez les données après les avoir séparées
+      } catch (error) {
+        // Afficher l'erreur dans l'élément HTML
+        const errorMessage = document.getElementById("errorMessage");
+        errorMessage.textContent = error.message;
+        errorMessage.style.display = "block";
+      }
+    };
+
+    reader.readAsText(file);
+  } catch (error) {
+    // Afficher l'erreur dans l'élément HTML
+    const errorMessage = document.getElementById("errorMessage");
+    errorMessage.textContent = error.message;
+    errorMessage.style.display = "block";
   }
-
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function (event) {
-    const tsvContent = event.target.result;
-
-    // Traitement du contenu TSV :
-    // 1. Séparer par ligne.
-    // 2. Séparer chaque ligne par la tabulation.
-    // 3. Enlever les guillemets autour des cellules.
-    const rows = tsvContent
-      .split("\n") // Sépare le fichier par ligne
-      .map(
-        (row) =>
-          row
-            .split("\t") // Sépare la ligne par tabulation
-            .map((cell) => cell.replace(/(^"|"$)/g, "").trim()) // Retire les guillemets autour des cellules et enlève les espaces inutiles
-      );
-
-    findEvents(rows); // Traitez les données après les avoir séparées
-  };
-
-  reader.readAsText(file);
 }
 
 function findEvents(rows) {
@@ -54,7 +67,7 @@ function findEvents(rows) {
       var voeuxList = [];
 
       const voeuxBrut = row
-        .slice(autresStartIndex)
+        .slice(eventsStartIndex)
         .map((item) => (item === "" ? "-1-" : parseInt(item, 10)));
 
       for (let j = 0; j < NBR_VOEUX; j++) {
@@ -69,7 +82,6 @@ function findEvents(rows) {
 
   // Récupérer les infos de chaque utilisateur
   const personnes = processUserDetails(rows, nameIndex, eventsStartIndex);
-
 
   let scoreAutres = {};
   let assignmentsAutres = {};
@@ -164,7 +176,7 @@ function findEvents(rows) {
   );
 
   generateRecapInscriptionExcel(
-    ...waitingListAutres,
+    waitingListAutres,
     "liste_attente.xlsx",
     "downloadLinkWaitingList"
   );

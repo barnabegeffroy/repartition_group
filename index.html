@@ -29,9 +29,21 @@
 
         <!-- Bouton pour traiter le fichier TSV -->
         <div class="d-flex justify-content-between mt-4">
-          <button id="processCsv" class="btn btn-primary" onclick="processFile()">
+          <button
+            id="processCsv"
+            class="btn btn-primary"
+            onclick="processFile()"
+          >
             2. Traiter le fichier
           </button>
+        </div>
+
+        <div
+          id="errorMessage"
+          class="alert alert-danger mt-4"
+          style="display: none"
+        >
+          <!-- Le message d'erreur sera inséré ici -->
         </div>
 
         <!-- Espace entre les boutons de téléchargement -->
@@ -61,9 +73,9 @@
       </div>
     </div>
     <footer class="text-center py-3 mt-5">
-        <p class="mb-0">Version 1.0.0</p>
+      <p class="mb-0">Version 1.0.1</p>
     </footer>
-    
+
     <!-- Importation des scripts nécessaires -->
     <script src="script.js"></script>
     <script
