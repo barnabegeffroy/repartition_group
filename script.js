@@ -31,131 +31,56 @@ function processFile() {
 }
 
 function findEvents(rows) {
-  const premiumStartIndex = rows[1].indexOf("premium");
-  const autresStartIndex = rows[1].indexOf("autres");
+  const eventsStartIndex = rows[1].indexOf("events");
   const nbrvoeuxIndex = rows[2].indexOf("nbr_voeux");
   const NBR_VOEUX = rows[3][nbrvoeuxIndex];
   const nbrEventsIndex = rows[2].indexOf("nbr_events");
   const NBR_SORTIES = rows[3][nbrEventsIndex];
   const headers = rows[2];
   const nameIndex = headers.indexOf("nom");
-  const premiumBrut = headers.slice(premiumStartIndex, autresStartIndex);
-  const autresBrut = headers.slice(autresStartIndex);
+  const eventsBrut = headers.slice(eventsStartIndex);
 
-  const premiumEvents = processEventList(premiumBrut);
-  const autresEvents = processEventList(autresBrut);
+  const eventsList = processEventList(eventsBrut);
 
   // Variables pour stocker les classements
-  const premiumEventsOrdonnes = {};
-  const autresEventsOrdonnes = {};
+  const eventsOrdonnes = {};
 
-  // Récupérer les préférences de chaque utilisateur pour premium
+  // Récupérer les préférences de chaque utilisateurice
   for (let i = 3; i < rows.length; i++) {
     const row = rows[i];
     if (row.length > 0) {
       const webformSerial = row[0];
 
-      var voeuxPremium = [];
-      var voeuxAutres = [];
+      var voeuxList = [];
 
-      const voeuxPremiumBrut = row
-        .slice(premiumStartIndex, autresStartIndex)
-        .map((item) => (item === "" ? "-1-" : parseInt(item, 10)));
-
-      const voeuxAutresBrut = row
+      const voeuxBrut = row
         .slice(autresStartIndex)
         .map((item) => (item === "" ? "-1-" : parseInt(item, 10)));
 
       for (let j = 0; j < NBR_VOEUX; j++) {
-        var premiumEventIndex = voeuxPremiumBrut.indexOf(j);
-        var autreEventIndex = voeuxAutresBrut.indexOf(j);
-        if (premiumEventIndex != -1) {
-          voeuxPremium.push(premiumEvents[premiumEventIndex]);
-          voeuxAutres.push(autresEvents[autreEventIndex]);
+        var autreEventIndex = voeuxBrut.indexOf(j);
+        if (autreEventIndex != -1) {
+          voeuxList.push(eventsList[autreEventIndex]);
         }
       }
-
-      premiumEventsOrdonnes[webformSerial] = voeuxPremium;
-      autresEventsOrdonnes[webformSerial] = voeuxAutres;
+      eventsOrdonnes[webformSerial] = voeuxList;
     }
   }
 
   // Récupérer les infos de chaque utilisateur
-  const personnes = processUserDetails(rows, nameIndex, premiumStartIndex);
+  const personnes = processUserDetails(rows, nameIndex, eventsStartIndex);
 
-  // Assignation premium
-  let scorePremium = {};
-  let assignmentsPremium = {};
-  let waitingListPremium = {};
-
-  premiumEvents.forEach((event) => {
-    waitingListPremium[event.name] = []; // Initialisation des listes d'attente pour chaque événement
-  });
-
-  // Initialiser les scores et les assignations
-  for (let participantId in premiumEventsOrdonnes) {
-    scorePremium[participantId] = 0; // Score initial des participants
-    assignmentsPremium[participantId] = []; // Assignation des événements aux participants
-  }
-
-  // Parcours des voeux de chaque participant, de 1 à NBR_VOEUX
-  for (let voeuxNum = 0; voeuxNum < NBR_VOEUX; voeuxNum++) {
-    // Trier les participants par leur score (prioriser les plus petits scores)
-    const sortedParticipants = Object.keys(scorePremium)
-      .filter(
-        (participantId) =>
-          assignmentsPremium[participantId].length < NBR_SORTIES
-      ) // Sélectionner ceux qui n'ont pas encore de score et n'ont pas atteint la limite de sorties
-      .sort((a, b) => scorePremium[a] - scorePremium[b]); // Trier par score croissant
-
-    for (let participantId of sortedParticipants) {
-      try {
-        let event = premiumEventsOrdonnes[participantId][voeuxNum];
-        let eventName = event.name;
-
-        // Vérifier la capacité de l'événement
-        let eventCapacity = premiumEvents[event.index].capacity;
-        let minimumCapacity = personnes[participantId].binome == 1 ? 1 : 0;
-
-        if (eventCapacity > minimumCapacity) {
-          // Si le participant n'a pas encore de sortie, l'assigner à cet événement
-          if (assignmentsPremium[participantId].length < NBR_SORTIES) {
-            assignmentsPremium[participantId].push(eventName);
-            premiumEvents[event.index].capacity -=
-              personnes[participantId].binome == 1 ? 2 : 1; // Réduire la capacité de l'événement
-            scorePremium[participantId] += NBR_VOEUX - voeuxNum; // Calculer le score
-          }
-        } else {
-          // Si l'événement est plein, l'ajouter à la liste d'attente
-          waitingListPremium[eventName].push(participantId);
-        }
-      } catch (error) {
-        // Gérer les erreurs si nécessaire
-      }
-    }
-  }
-  let participantsByEventPremium = {};
-
-  // Parcourir les assignations pour remplir `participantsByEvent`
-  Object.keys(assignmentsPremium).forEach((participantId) => {
-    assignmentsPremium[participantId].forEach((eventName) => {
-      if (!participantsByEventPremium[eventName]) {
-        participantsByEventPremium[eventName] = [];
-      }
-      participantsByEventPremium[eventName].push(participantId);
-    });
-  });
 
   let scoreAutres = {};
   let assignmentsAutres = {};
   let waitingListAutres = {};
 
-  autresEvents.forEach((event) => {
+  eventsList.forEach((event) => {
     waitingListAutres[event.name] = []; // Initialisation des listes d'attente pour chaque événement
   });
 
   // Initialiser les scores et les assignations pour "autres"
-  for (let participantId in autresEventsOrdonnes) {
+  for (let participantId in eventsOrdonnes) {
     scoreAutres[participantId] = 0; // Score initial des participants
     assignmentsAutres[participantId] = []; // Assignation des événements "autres"
   }
@@ -170,15 +95,15 @@ function findEvents(rows) {
 
     for (let participantId of sortedParticipants) {
       try {
-        let event = autresEventsOrdonnes[participantId][voeuxNum];
+        let event = eventsOrdonnes[participantId][voeuxNum];
         let eventName = event.name;
 
-        let eventCapacity = autresEvents[event.index].capacity;
+        let eventCapacity = eventsList[event.index].capacity;
         let minimumCapacity = personnes[participantId].binome == 1 ? 1 : 0;
         if (eventCapacity > minimumCapacity) {
           if (assignmentsAutres[participantId].length < NBR_SORTIES) {
             assignmentsAutres[participantId].push(eventName);
-            autresEvents[event.index].capacity -=
+            eventsList[event.index].capacity -=
               personnes[participantId].binome == 1 ? 2 : 1;
             scoreAutres[participantId] += NBR_VOEUX - voeuxNum;
           }
@@ -211,10 +136,7 @@ function findEvents(rows) {
   ];
 
   for (let i = 1; i <= NBR_SORTIES; i++) {
-    headersXLS.push(`Premium - ${i}`);
-  }
-  for (let i = 1; i <= NBR_SORTIES; i++) {
-    headersXLS.push(`Autres - ${i}`);
+    headersXLS.push(`Choix - ${i}`);
   }
 
   const data = [headersXLS]; // Première ligne : les en-têtes
@@ -226,9 +148,6 @@ function findEvents(rows) {
       personne.coordonnees,
       personne.binome == 1 ? "Oui" : "Non",
       personne.binome == 1 ? personne.coordonnees_binome : "",
-      ...(assignmentsPremium[id] || [])
-        .concat(Array(NBR_SORTIES).fill(""))
-        .slice(0, NBR_SORTIES),
       ...(assignmentsAutres[id] || [])
         .concat(Array(NBR_SORTIES).fill(""))
         .slice(0, NBR_SORTIES),
@@ -239,13 +158,13 @@ function findEvents(rows) {
   generateExcelFile(data, "repartitions_par_personnes.xlsx", "downloadLink");
 
   generateRecapInscriptionExcel(
-    { ...participantsByEventPremium, ...participantsByEventAutres },
+    participantsByEventAutres,
     "recap_inscriptions_par_evenements.xlsx",
     "downloadLinkEventRecap"
   );
 
   generateRecapInscriptionExcel(
-    { ...waitingListPremium, ...waitingListAutres },
+    ...waitingListAutres,
     "liste_attente.xlsx",
     "downloadLinkWaitingList"
   );
@@ -299,7 +218,7 @@ function processUserPreferences(preferences, events) {
   });
 }
 
-function processUserDetails(rows, nameIndex, premiumStartIndex) {
+function processUserDetails(rows, nameIndex, eventsStartIndex) {
   const personnes = {};
   for (let i = 3; i < rows.length; i++) {
     const row = rows[i];
@@ -307,7 +226,7 @@ function processUserDetails(rows, nameIndex, premiumStartIndex) {
       const webformSerial = row[0];
       const [nom, prenom, coordonnees, binome, coordonnees_binome] = row.slice(
         nameIndex,
-        premiumStartIndex
+        eventsStartIndex
       );
       personnes[webformSerial] = {
         nom,
