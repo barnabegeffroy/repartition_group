@@ -60,30 +60,34 @@ function findEvents(rows) {
   // Variables pour stocker les classements
   const eventsOrdonnes = {};
 
+  // Récupérer les infos de chaque utilisateur
+  const personnes = processUserDetails(rows, nameIndex, eventsStartIndex);
+
   // Récupérer les préférences de chaque utilisateurice
   for (let i = 3; i < rows.length; i++) {
     const row = rows[i];
     if (row.length > 0) {
       const webformSerial = row[0];
 
-      var voeuxList = [];
+      // Vérifier si le webformSerial existe dans personnes
+      if (personnes[webformSerial]) {
+        var voeuxList = [];
 
-      const voeuxBrut = row
-        .slice(eventsStartIndex)
-        .map((item) => (item === "" ? "-1-" : parseInt(item, 10)));
+        const voeuxBrut = row
+          .slice(eventsStartIndex)
+          .map((item) => (item === "" ? "-1-" : parseInt(item, 10)));
 
-      for (let j = 0; j < NBR_VOEUX; j++) {
-        var autreEventIndex = voeuxBrut.indexOf(j);
-        if (autreEventIndex != -1) {
-          voeuxList.push(eventsList[autreEventIndex]);
+        for (let j = 0; j < NBR_VOEUX; j++) {
+          var autreEventIndex = voeuxBrut.indexOf(j);
+          if (autreEventIndex != -1) {
+            voeuxList.push(eventsList[autreEventIndex]);
+          }
         }
+        // Ajouter les voeux à eventsOrdonnes uniquement si personnes[webformSerial] existe
+        eventsOrdonnes[webformSerial] = voeuxList;
       }
-      eventsOrdonnes[webformSerial] = voeuxList;
     }
   }
-
-  // Récupérer les infos de chaque utilisateur
-  const personnes = processUserDetails(rows, nameIndex, eventsStartIndex);
 
   let scoreAutres = {};
   let assignmentsAutres = {};
@@ -108,7 +112,7 @@ function findEvents(rows) {
       .sort((a, b) => scoreAutres[a] - scoreAutres[b]);
 
     for (let participantId of sortedParticipants) {
-      try {
+      if (eventsOrdonnes[participantId][voeuxNum]) {
         let event = eventsOrdonnes[participantId][voeuxNum];
         let eventName = event.name;
 
@@ -124,8 +128,6 @@ function findEvents(rows) {
         } else {
           waitingListAutres[eventName].push(participantId);
         }
-      } catch (error) {
-        // Gérer les erreurs si nécessaire
       }
     }
   }
