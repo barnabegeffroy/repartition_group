@@ -186,9 +186,36 @@ function findEvents(rows) {
   function generateRecapInscriptionExcel(list, fileName, id) {
     const data = []; // Initialisation des données pour le fichier Excel
 
-    // Ajouter les titres des événements sur la première ligne
-    const headerRow = Object.keys(list);
-    data.push(headerRow);
+    // Fonction pour extraire la date du nom de l'événement et la convertir en un objet Date
+    function extractDateFromEventName(eventName) {
+      const datePattern = /^(\d{1,2})\/(\d{1,2})/; // Modèle pour extraire la date (jour/mois)
+      var name =
+        eventName.charAt(0) === " "
+          ? (eventName = eventName.substring(1))
+          : eventName;
+      const match = name.match(datePattern);
+      if (match) {
+        const day = match[1].padStart(2, "0"); // Ajoute un zéro si le jour est à un seul chiffre
+        const month = match[2].padStart(2, "0"); // Ajoute un zéro si le mois est à un seul chiffre
+        // Crée un objet Date à partir de la date extraite
+        return new Date(`${month}/${day}/2025`); // On fixe l'année pour simplifier la comparaison
+      }
+      return null; // Retourne null si aucun match
+    }
+
+    // Trier les événements par date
+    const headerRow = Object.keys(list).sort((eventA, eventB) => {
+      const dateA = extractDateFromEventName(eventA);
+      const dateB = extractDateFromEventName(eventB);
+
+      // Si l'une des dates est invalide, on la place après les autres
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      return dateA - dateB; // Comparaison chronologique des objets Date
+    });
+
+    data.push(headerRow); // Ajouter les titres triés des événements
 
     // Préparer les informations des participants
     const maxParticipantsPerEvent = Math.max(
