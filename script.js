@@ -27,6 +27,7 @@ function processFile() {
       try {
         findEvents(rows); // Traitez les données après les avoir séparées
       } catch (error) {
+        console.error(error);
         // Afficher l'erreur dans l'élément HTML
         const errorMessage = document.getElementById("errorMessage");
         errorMessage.textContent = error.message;
@@ -36,6 +37,7 @@ function processFile() {
 
     reader.readAsText(file);
   } catch (error) {
+    console.error(error);
     // Afficher l'erreur dans l'élément HTML
     const errorMessage = document.getElementById("errorMessage");
     errorMessage.textContent = error.message;
@@ -232,14 +234,65 @@ function processUserPreferences(preferences, events) {
 
 function processUserDetails(rows, nameIndex, eventsStartIndex) {
   const personnes = {};
+  const uniqueEntries = new Set();
+  const namePrenomMap = {};
+  const conflicts = []; 
+
   for (let i = 3; i < rows.length; i++) {
     const row = rows[i];
     if (row.length > 0) {
       const webformSerial = row[0];
+
+      if (!webformSerial.trim()) {
+        continue;
+      }
+
       const [nom, prenom, coordonnees, binome, coordonnees_binome] = row.slice(
         nameIndex,
         eventsStartIndex
       );
+
+      // Normalisation des champs
+      const normalizedNom = normalizeString(nom.split(/[\s-]/)[0]);
+      const normalizedPrenom = normalizeString(prenom).charAt(0);
+      const normalizedCoordonnees = coordonnees.replace(/\s+/g, ""); // Suppression des espaces
+      const normalizedBinome = parseInt(binome, 10); // Conversion en entier
+
+      const uniqueKey = `${normalizedNom}|${normalizedPrenom}|${normalizedCoordonnees}|${normalizedBinome}`;
+      const namePrenomKey = `${normalizedNom}|${normalizedPrenom}`;
+
+      // Vérifier si cette entrée est déjà présente
+      if (uniqueEntries.has(uniqueKey)) {
+        console.log(`Doublon détecté : ${nom} ${prenom}`);
+        continue; // Ignorer cette ligne si elle est un doublon exact
+      }
+
+      // Vérifier si le nom et prénom existent déjà avec des coordonnées ou binômes différents
+      if (namePrenomMap[namePrenomKey]) {
+        const existingEntry = namePrenomMap[namePrenomKey];
+
+        if (
+          existingEntry.coordonnees !== normalizedCoordonnees ||
+          existingEntry.binome !== normalizedBinome
+        ) {
+          console.warn(
+            `Conflit détecté pour ${nom} ${prenom} : différentes coordonnées ou binômes.`
+          );
+          // Ajout du conflit à la liste
+          conflicts.push(`Conflit pour ${nom} ${prenom}: coordonnées ou binôme différents.`);
+        }
+      } else {
+        // Ajouter cette entrée pour suivi futur
+        namePrenomMap[namePrenomKey] = {
+          coordonnees: normalizedCoordonnees,
+          binome: normalizedBinome,
+        };
+      }
+
+      // Ajouter à la liste des entrées uniques
+      uniqueEntries.add(uniqueKey);
+
+      // Stocker les détails de la personne
       personnes[webformSerial] = {
         nom,
         prenom,
@@ -249,8 +302,25 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
       };
     }
   }
+
+  // Si des conflits ont été détectés, on les affiche dans l'HTML
+  if (conflicts.length > 0) {
+    const conflictList = document.getElementById("conflictList");
+    conflictList.innerHTML = conflicts.map(conflict => `<li>${conflict}</li>`).join("");
+    document.getElementById("conflictMessages").style.display = "block";
+  }
+
   return personnes;
 }
+
+
+// Fonction utilitaire pour normaliser une chaîne (sans accents et sans casse)
+const normalizeString = (str) =>
+  str
+    .toLowerCase() // Minuscule
+    .normalize("NFD") // Décompose les accents
+    .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+    .replace(/[\s-]+/g, ""); // Supprime les espaces et les tirets
 
 // Fonction utilitaire pour formater les informations des participants
 function formatParticipantInfo(person) {
