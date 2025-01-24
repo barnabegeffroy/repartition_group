@@ -132,6 +132,24 @@ function findEvents(rows) {
     }
   }
 
+  // Tri de la liste d'attente par score pour chaque événement
+  Object.keys(waitingListAutres).forEach((eventName) => {
+    // Trier les participants dans la liste d'attente par leur score
+    waitingListAutres[eventName].sort((a, b) => {
+      return scoreAutres[a] - scoreAutres[b]; // Tri croissant par score
+    });
+  });
+
+  // Parcours des participants pour afficher ceux ayant un score de 0
+  const participantsAvecScoreZero = Object.keys(scoreAutres).filter(
+    (participantId) => scoreAutres[participantId] === 0
+  );
+
+  console.log("Participants avec un score de 0 :");
+  participantsAvecScoreZero.forEach((participantId) => {
+    console.log(personnes[participantId]);
+  });
+
   let participantsByEventAutres = {};
 
   Object.keys(assignmentsAutres).forEach((participantId) => {
