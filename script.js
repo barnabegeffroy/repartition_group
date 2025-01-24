@@ -195,6 +195,15 @@ function findEvents(rows) {
       ...Object.values(list).map((participants) => participants.length)
     );
 
+    // Ajouter le nombre de places restantes
+    data.push(
+      headerRow.map((eventName) => {
+        const event = eventsList.find((event) => event.name === eventName);
+        if (event) return "Places restantes : " + event.capacity;
+        return "";
+      })
+    );
+
     // Pour chaque ligne, ajouter les participants sous chaque événement
     for (let i = 0; i < maxParticipantsPerEvent; i++) {
       const row = headerRow.map((eventName) => {
@@ -236,7 +245,7 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
   const personnes = {};
   const uniqueEntries = new Set();
   const namePrenomMap = {};
-  const conflicts = []; 
+  const conflicts = [];
 
   for (let i = 3; i < rows.length; i++) {
     const row = rows[i];
@@ -279,7 +288,9 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
             `Conflit détecté pour ${nom} ${prenom} : différentes coordonnées ou binômes.`
           );
           // Ajout du conflit à la liste
-          conflicts.push(`Conflit pour ${nom} ${prenom}: coordonnées ou binôme différents.`);
+          conflicts.push(
+            `Conflit pour ${nom} ${prenom}: coordonnées ou binôme différents.`
+          );
         }
       } else {
         // Ajouter cette entrée pour suivi futur
@@ -306,13 +317,14 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
   // Si des conflits ont été détectés, on les affiche dans l'HTML
   if (conflicts.length > 0) {
     const conflictList = document.getElementById("conflictList");
-    conflictList.innerHTML = conflicts.map(conflict => `<li>${conflict}</li>`).join("");
+    conflictList.innerHTML = conflicts
+      .map((conflict) => `<li>${conflict}</li>`)
+      .join("");
     document.getElementById("conflictMessages").style.display = "block";
   }
 
   return personnes;
 }
-
 
 // Fonction utilitaire pour normaliser une chaîne (sans accents et sans casse)
 const normalizeString = (str) =>
