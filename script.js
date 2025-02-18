@@ -278,7 +278,10 @@ function findEvents(rows) {
   function generateMailingListExcel(list, fileName, id) {
     const data = []; // Initialisation des données pour le fichier Excel
 
-    data.push(Object.keys(list)); // Ajouter les titres des événements
+    // Trier les événements par date
+    const headerRow = Object.keys(list);
+
+    data.push(headerRow); // Ajouter les titres triés des événements
 
     // Préparer les informations des participants
     const maxParticipantsPerEvent = Math.max(
