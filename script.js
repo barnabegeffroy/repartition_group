@@ -14,8 +14,8 @@ function processFile() {
 
       // Traitement du contenu TSV :
       // 1. Séparer par ligne.
-      // 2. Séparer chaque ligne par la tabulation.
-      // 3. Enlever les guillemets autour des cellules.
+      // 2. Séparer chaque ligne par tabulation.
+      // 3. Enlever les guillemets et espaces superflus autour des cellules.
       const rows = tsvContent
         .split("\n") // Sépare le fichier par ligne
         .map(
@@ -27,28 +27,28 @@ function processFile() {
       try {
         findEvents(rows); // Traitez les données après les avoir séparées
       } catch (error) {
-        console.error(error);
-        // Afficher l'erreur dans l'élément HTML
-        const errorMessage = document.getElementById("errorMessage");
-        errorMessage.textContent = error.message;
-        errorMessage.style.display = "block";
+        displayError(error);
       }
     };
 
     reader.readAsText(file);
   } catch (error) {
-    console.error(error);
-    // Afficher l'erreur dans l'élément HTML
-    const errorMessage = document.getElementById("errorMessage");
-    errorMessage.textContent = error.message;
-    errorMessage.style.display = "block";
+    displayError(error);
   }
+}
+
+// Fonction utilitaire pour afficher les erreurs
+function displayError(error) {
+  const errorMessage = document.getElementById("errorMessage");
+  errorMessage.textContent = error.message;
+  errorMessage.style.display = "block";
+  console.error(error);
 }
 
 function findEvents(rows) {
   const eventsStartIndex = rows[1].indexOf("events");
-  const nbrvoeuxIndex = rows[2].indexOf("nbr_voeux");
-  const NBR_VOEUX = rows[3][nbrvoeuxIndex];
+  const nbrVoeuxIndex = rows[2].indexOf("nbr_voeux");
+  const NBR_VOEUX = rows[3][nbrVoeuxIndex];
   const nbrEventsIndex = rows[2].indexOf("nbr_events");
   const NBR_SORTIES = rows[3][nbrEventsIndex];
   const headers = rows[2];
@@ -165,6 +165,7 @@ function findEvents(rows) {
     "Nom",
     "Prénom",
     "Coordonnées",
+    "Email",
     "Binôme",
     "Coordonnées Binôme",
   ];
@@ -180,6 +181,7 @@ function findEvents(rows) {
       personne.nom,
       personne.prenom,
       personne.coordonnees,
+      personne.email,
       personne.binome == 1 ? "Oui" : "Non",
       personne.binome == 1 ? personne.coordonnees_binome : "",
       ...(assignmentsAutres[id] || [])
@@ -201,6 +203,11 @@ function findEvents(rows) {
     waitingListAutres,
     "liste_attente.xlsx",
     "downloadLinkWaitingList"
+  );
+  generateMailingListExcel(
+    participantsByEventAutres,
+    "mailing_list.xlsx",
+    "downloadLinkMailingList"
   );
 
   function generateRecapInscriptionExcel(list, fileName, id) {
@@ -267,6 +274,42 @@ function findEvents(rows) {
     // Générer le fichier Excel
     generateExcelFile(data, fileName, id);
   }
+
+  function generateMailingListExcel(list, fileName, id) {
+    const data = []; // Initialisation des données pour le fichier Excel
+
+    data.push(Object.keys(list)); // Ajouter les titres des événements
+
+    // Préparer les informations des participants
+    const maxParticipantsPerEvent = Math.max(
+      ...Object.values(list).map((participants) => participants.length)
+    );
+
+    // Ajouter le nombre de places restantes
+    data.push(
+      headerRow.map((eventName) => {
+        const event = eventsList.find((event) => event.name === eventName);
+        if (event) return "Places restantes : " + event.capacity;
+        return "";
+      })
+    );
+
+    // Pour chaque ligne, ajouter les participants sous chaque événement
+    for (let i = 0; i < maxParticipantsPerEvent; i++) {
+      const row = headerRow.map((eventName) => {
+        const participants = list[eventName] || [];
+        if (participants[i]) {
+          const person = personnes[participants[i]];
+          return person.email;
+        }
+        return ""; // Cellule vide si aucun participant
+      });
+      data.push(row);
+    }
+
+    // Générer le fichier Excel
+    generateExcelFile(data, fileName, id);
+  }
 }
 
 function processEventList(eventsBrut) {
@@ -303,10 +346,8 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
         continue;
       }
 
-      const [nom, prenom, coordonnees, binome, coordonnees_binome] = row.slice(
-        nameIndex,
-        eventsStartIndex
-      );
+      const [nom, prenom, coordonnees, email, binome, coordonnees_binome] =
+        row.slice(nameIndex, eventsStartIndex);
 
       // Normalisation des champs
       const normalizedNom = normalizeString(nom.split(/[\s-]/)[0]);
@@ -355,6 +396,7 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
         nom,
         prenom,
         coordonnees,
+        email,
         binome,
         coordonnees_binome,
       };
@@ -387,7 +429,7 @@ function formatParticipantInfo(person) {
     person.binome == 1
       ? ` \nBinôme : ${person.binome} \nCoordonnées Binôme : ${person.coordonnees_binome}`
       : "";
-  return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees}${binomeInfo}`;
+  return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees}\n Email :${binomeInfo}`;
 }
 
 function generateExcelFile(data, fileName, downloadLinkId) {
