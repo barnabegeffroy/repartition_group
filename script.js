@@ -166,6 +166,7 @@ function findEvents(rows) {
     "Prénom",
     "Coordonnées",
     "Email",
+    "Type de chambre",
     "Binôme",
     "Coordonnées Binôme",
   ];
@@ -182,6 +183,7 @@ function findEvents(rows) {
       personne.prenom,
       personne.coordonnees,
       personne.email,
+      personne.chambre,
       personne.binome == 1 ? "Oui" : "Non",
       personne.binome == 1 ? personne.coordonnees_binome : "",
       ...(assignmentsAutres[id] || [])
@@ -303,7 +305,9 @@ function findEvents(rows) {
         const participants = list[eventName] || [];
         if (participants[i]) {
           const person = personnes[participants[i]];
-          return person.email;
+          return person.email === ""
+            ? formatParticipantInfo(person, false)
+            : person.email;
         }
         return ""; // Cellule vide si aucun participant
       });
@@ -349,8 +353,15 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
         continue;
       }
 
-      const [nom, prenom, coordonnees, email, binome, coordonnees_binome] =
-        row.slice(nameIndex, eventsStartIndex);
+      const [
+        nom,
+        prenom,
+        coordonnees,
+        email,
+        chambre,
+        binome,
+        coordonnees_binome,
+      ] = row.slice(nameIndex, eventsStartIndex);
 
       // Normalisation des champs
       const normalizedNom = normalizeString(nom.split(/[\s-]/)[0]);
@@ -400,6 +411,7 @@ function processUserDetails(rows, nameIndex, eventsStartIndex) {
         prenom,
         coordonnees,
         email,
+        chambre,
         binome,
         coordonnees_binome,
       };
@@ -427,12 +439,15 @@ const normalizeString = (str) =>
     .replace(/[\s-]+/g, ""); // Supprime les espaces et les tirets
 
 // Fonction utilitaire pour formater les informations des participants
-function formatParticipantInfo(person) {
+function formatParticipantInfo(person, displayDetails = true) {
   const binomeInfo =
     person.binome == 1
       ? ` \nBinôme : ${person.binome} \nCoordonnées Binôme : ${person.coordonnees_binome}`
       : "";
-  return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees}\n Email :${binomeInfo}`;
+  const details = displayDetails
+    ? `\n Email :${person.email}${binomeInfo}\n Type chambre ${person.chambre}`
+    : "";
+  return `${person.nom} ${person.prenom} \nCoordonnées : ${person.coordonnees} ${details}`;
 }
 
 function generateExcelFile(data, fileName, downloadLinkId) {
